@@ -1,0 +1,20 @@
+node_modules
+
+/.cache
+/build
+/app/build
+/public/build/
+/public/_dev
+/app/public/build
+
+.env
+.idea
+
+
+# Logs
+logs
+*.log
+
+# extensions build output
+extensions/*/build
+dist/
