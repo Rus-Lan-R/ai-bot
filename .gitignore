@@ -18,3 +18,5 @@ logs
 # extensions build output
 extensions/*/build
 dist/
+
+/tmp/**
