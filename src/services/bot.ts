@@ -1,6 +1,8 @@
 import fs from "fs";
 import TgBot from "node-telegram-bot-api";
 import { YtDownload } from "./ytdl";
+import { User } from "../database/users";
+import { Logs } from "../database/loggs";
 
 const ytRegex =
   /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|.+\/.+\/|user\/\w+\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
@@ -19,7 +21,27 @@ export class TelegramBot {
   async init() {
     this.bot.onText(/\/start/, async (msg) => {
       const chatId = msg.chat.id;
-      await this.bot.sendMessage(chatId, "Hi i'm bot");
+      try {
+        let user = await User.findOne({ chat_id: chatId });
+        if (!user) {
+          user = await User.create({
+            chat_id: chatId,
+            first_name: msg.chat.first_name,
+            last_name: msg.chat.last_name,
+            username: msg.sender_chat?.active_usernames,
+            language_code: msg.from?.language_code,
+          });
+        }
+
+        await this.bot.sendMessage(chatId, "Hi i'm bot");
+        await Logs.create({
+          user_id: user._id,
+          message_id: msg.message_id,
+          text: "/start",
+        });
+      } catch (error) {
+        console.log(error);
+      }
     });
   }
 

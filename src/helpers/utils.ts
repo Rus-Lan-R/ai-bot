@@ -1,4 +1,4 @@
-import { MessageContent, Text } from "openai/resources/beta/threads/messages";
+import { MessageContent } from "openai/resources/beta/threads/messages";
 
 export const extractTextWithoutAnnotations = (data: MessageContent[]) => {
   return data
