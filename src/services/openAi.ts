@@ -1,87 +1,75 @@
 import OpenAI from "openai";
-import { assistantPrompt, questionPrompt, introPrompt } from "../const/prompt";
+import { assistantPrompt, introPrompt } from "../const/prompt";
 import fs from "fs";
 import path from "path";
 import { extractTextWithoutAnnotations } from "../helpers/utils";
 import { Run } from "openai/resources/beta/threads/runs/runs";
 import { Message } from "openai/resources/beta/threads/messages";
 
-interface IQuestions {
-  question: string;
-  answers: { answer: string; isCorrect: boolean }[];
-}
-
 const aiClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const storeName = "rag-vs-store";
-const files = fs.readdirSync(path.join(process.env.PWD || "", "docs"));
-
 export const assistantInit = async () => {
   console.log("start file uploading");
-  const list = await aiClient.files.list();
+  // const list = await aiClient.files.list();
 
-  const oldFiles = list.data.filter((item) => files.includes(item.filename));
-  const oldFileNames = oldFiles.map((item) => item.filename);
-  const newFiles = files.filter((item) => !oldFileNames.includes(item));
+  // const oldFiles = list.data.filter((item) => files.includes(item.filename));
+  // const oldFileNames = oldFiles.map((item) => item.filename);
+  // const newFiles = files.filter((item) => !oldFileNames.includes(item));
 
-  console.log("total files", list?.data?.length);
-  console.log("new files", newFiles);
-  console.log("old files", oldFileNames);
+  // console.log("total files", list?.data?.length);
+  // console.log("new files", newFiles);
+  // console.log("old files", oldFileNames);
 
-  const vectorStores = await aiClient.beta.vectorStores.list();
+  // const vectorStores = await aiClient.beta.vectorStores.list();
 
-  console.log("stores count", vectorStores.data.length);
-  const oldStore = vectorStores.data.find((item) => item.name === storeName);
-  console.log("old vs", oldStore?.id);
-  const fileStreams = newFiles.map((fileName) =>
-    fs.createReadStream(path.join(process.env.PWD || "", "docs", fileName))
-  );
+  // console.log("stores count", vectorStores.data.length);
+  // const oldStore = vectorStores.data.find((item) => item.name === storeName);
+  // console.log("old vs", oldStore?.id);
+  // const fileStreams = newFiles.map((fileName) =>
+  //   fs.createReadStream(path.join(process.env.PWD || "", "docs", fileName))
+  // );
 
-  const newFilesForRetrieval = await Promise.all(
-    fileStreams.map((item) =>
-      aiClient.files.create({
-        file: item,
-        purpose: "assistants",
-      })
-    )
-  );
+  // const newFilesForRetrieval = await Promise.all(
+  //   fileStreams.map((item) =>
+  //     aiClient.files.create({
+  //       file: item,
+  //       purpose: "assistants",
+  //     })
+  //   )
+  // );
 
-  let vectorStore;
-  const fileIds = [...oldFiles, ...newFilesForRetrieval].map((item) => item.id);
-  if (oldStore) {
-    const batches = await aiClient.beta.vectorStores.fileBatches.create(
-      oldStore.id,
-      {
-        file_ids: fileIds,
-      }
-    );
+  // let vectorStore;
+  // const fileIds = [...oldFiles, ...newFilesForRetrieval].map((item) => item.id);
+  // if (oldStore) {
+  //   const batches = await aiClient.beta.vectorStores.fileBatches.create(
+  //     oldStore.id,
+  //     {
+  //       file_ids: fileIds,
+  //     }
+  //   );
 
-    console.log("add files status", batches.status);
-    vectorStore = oldStore;
-    console.log("use prev vs store", vectorStore.id);
-  } else {
-    vectorStore = await aiClient.beta.vectorStores.create({
-      name: storeName,
-      file_ids: [...oldFiles, ...newFilesForRetrieval].map((item) => item.id),
-    });
-    console.log("created new vs store", vectorStore.id);
-  }
+  //   console.log("add files status", batches.status);
+  //   vectorStore = oldStore;
+  //   console.log("use prev vs store", vectorStore.id);
+  // } else {
+  //   vectorStore = await aiClient.beta.vectorStores.create({
+  //     name: storeName,
+  //     file_ids: [...oldFiles, ...newFilesForRetrieval].map((item) => item.id),
+  //   });
+  //   console.log("created new vs store", vectorStore.id);
+  // }
 
   console.log("files added to VS");
-  console.dir(vectorStore, { depth: 5 });
+  // console.dir(vectorStore, { depth: 5 });
 
   const assistant = await aiClient.beta.assistants.create({
     model: "gpt-4o",
     name: "AI-ассистент LATOKEN",
     instructions: assistantPrompt.trim(),
     temperature: 0.5,
-    tool_resources: {
-      file_search: {
-        vector_store_ids: [vectorStore.id],
-      },
-    },
+    tool_resources: {},
     tools: [
       { type: "file_search" },
       {
@@ -147,34 +135,6 @@ export const getOpenAIResponse = async ({
   return text;
 };
 
-export const generateQuestions = async ({
-  assistantId,
-  threadId,
-}: {
-  assistantId: string;
-  threadId: string;
-}): Promise<IQuestions | undefined> => {
-  await aiClient.beta.threads.messages.create(threadId, {
-    role: "assistant",
-    content: questionPrompt,
-  });
-
-  const run = await aiClient.beta.threads.runs.createAndPoll(threadId, {
-    assistant_id: assistantId,
-  });
-
-  const message = await handleRunStatus(run, threadId);
-  const text = extractTextWithoutAnnotations(message?.content || []);
-  try {
-    const questions = (await JSON.parse(text)) as IQuestions;
-    return questions;
-  } catch (error) {
-    console.log(text);
-    console.log(error);
-    return undefined;
-  }
-};
-
 export const simpleRequest = async (hiText: string) => {
   const response = await aiClient.chat.completions.create({
     model: "gpt-4o",
@@ -190,13 +150,11 @@ export const simpleRequest = async (hiText: string) => {
 };
 
 const handleRequiresAction = async (run: Run, threadId: string) => {
-  // Check if there are tools that require outputs
   if (
     run.required_action &&
     run.required_action.submit_tool_outputs &&
     run.required_action.submit_tool_outputs.tool_calls
   ) {
-    // Loop through each tool in the required action section
     const toolOutputs = run.required_action.submit_tool_outputs.tool_calls.map(
       (tool) => {
         if (tool.function.name === "get_date") {
