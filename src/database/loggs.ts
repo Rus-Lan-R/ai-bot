@@ -1,16 +1,16 @@
-import { Schema, model, ObjectId } from "mongoose";
+import { Schema, model } from "mongoose";
 
 interface ILog {
-  user_id: typeof Schema.Types.ObjectId;
-  message_id: number;
+  userId: typeof Schema.Types.ObjectId;
+  messageId: number;
   date: number;
   text: string;
 }
 
 const LogsShema = new Schema<ILog>(
   {
-    user_id: { type: Schema.Types.ObjectId, ref: "User" },
-    message_id: { type: Number },
+    userId: { type: Schema.Types.ObjectId, ref: "User" },
+    messageId: { type: Number },
     date: { type: Number },
     text: { type: String },
   },

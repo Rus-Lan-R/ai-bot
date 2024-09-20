@@ -6,20 +6,21 @@ export function logFunction(cb: (msg: Message) => any) {
   return async function (data: Message) {
     try {
       const chatId = data.chat?.id;
-      let user = await User.findOne({ chat_id: chatId });
+      let user = await User.findOneAndUpdate({ chatId: chatId }, {});
+      console.log(user);
       if (!user) {
         user = await User.create({
-          chat_id: chatId,
-          first_name: data.chat.first_name,
-          last_name: data.chat.last_name,
+          chatId: chatId,
+          firstName: data.chat.first_name,
+          lastName: data.chat.last_name,
           username: data.sender_chat?.active_usernames,
-          language_code: data.from?.language_code,
+          languageCode: data.from?.language_code,
         });
       }
 
       await Logs.create({
-        user_id: user._id,
-        message_id: data.message_id,
+        userId: user._id,
+        messageId: data.message_id,
         text: data.text || "",
       });
     } catch (error) {

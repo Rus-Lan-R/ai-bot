@@ -2,26 +2,24 @@ import { Schema, model } from "mongoose";
 
 export interface IUser {
   _id: number;
-  chat_id: number;
-  is_bot: boolean;
-  is_admin: boolean;
-  first_name: string;
-  last_name: string;
+  chatId: number;
+  isBot: boolean;
+  isAdmin: boolean;
+  firstName: string;
+  lastName: string;
   username: string;
-  language_code: string;
-  count_requests: number;
+  languageCode: string;
 }
 
 const userSchema = new Schema<IUser>(
   {
-    chat_id: { type: Number, required: true, unique: true },
-    is_bot: { type: Boolean },
-    is_admin: { type: Boolean, default: false },
-    first_name: { type: String },
-    last_name: { type: String },
+    chatId: { type: Number, required: true, unique: true },
+    isBot: { type: Boolean },
+    isAdmin: { type: Boolean, default: false },
+    firstName: { type: String },
+    lastName: { type: String },
     username: { type: String },
-    language_code: { type: String },
-    count_requests: { type: Number, default: 0 },
+    languageCode: { type: String },
   },
   { timestamps: true }
 );

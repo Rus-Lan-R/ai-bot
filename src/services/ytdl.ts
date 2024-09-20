@@ -36,6 +36,7 @@ export class YtDownload {
     onError: ({ message, path }: { message: string; path: string }) => void;
   }) {
     const info = await ytdl.getBasicInfo(videoURL);
+
     const title = info.videoDetails.title;
 
     const pathLink = [
@@ -57,6 +58,22 @@ export class YtDownload {
     });
 
     ffmpeg(audioStream)
+      .outputOptions([
+        "-metadata",
+        `artist=${info.videoDetails.author.name}`,
+        "-metadata",
+        `title=${title}`,
+        // "-i",
+        // info.videoDetails.thumbnails[0].url,
+        // "-map",
+        // "0:0",
+        // "-map",
+        // "1:0",
+        // "-c",
+        // "copy",
+        // "-id3v2_version",
+        // "3",
+      ])
       .audioBitrate(320)
       .save(tmpPath)
       .on("end", async (data) => {
